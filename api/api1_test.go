@@ -98,6 +98,26 @@ func TestGetWalletsRight(t *testing.T) {
 	assert.Equal(t, 8, len(response))
 }
 
+func TestGetWalletsTimeout(t *testing.T) {
+	// создание запроса
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[2, 5]", nil)
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполняем запрос
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
 func TestPaginationGetWalletsRight1(t *testing.T) {
 	// выполнение запроса
 	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[0,2]", nil)
@@ -182,6 +202,20 @@ func TestPaginationGetWalletWrong3(t *testing.T) {
 	assert.Equal(t, want, response)
 }
 
+func TestPaginationGetWalletWrong4(t *testing.T) {
+	// выполнение запроса
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[4, -2]", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, r)
+	// проверка результатов
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(400), "message": "the range value must be positive"}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
 func TestGetWalletFromIDRight(t *testing.T) {
 	// выполнение запроса
 	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/2", nil)
@@ -192,6 +226,26 @@ func TestGetWalletFromIDRight(t *testing.T) {
 	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	want := map[string]any{"id": float64(2), "walletid": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationtype": "WITHDRAW", "amount": float64(50000)}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
+func TestGetWalletsFromIDTimeout(t *testing.T) {
+	// создание запроса
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/2", nil)
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполнение запроса
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
 	assert.NoError(t, err)
 	assert.Equal(t, want, response)
 }
@@ -234,6 +288,26 @@ func TestGetBalanceFromWalletIDRight(t *testing.T) {
 	var response int
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	want := 900340
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
+func TestGetBalanceFromWalletIDTimeout(t *testing.T) {
+	// создание запроса
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/2fb7daea-1685-4575-bce1-74103bbf8a6a", nil)
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполнение запроса
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
 	assert.NoError(t, err)
 	assert.Equal(t, want, response)
 }
@@ -281,6 +355,31 @@ func TestCreateWalletRight(t *testing.T) {
 	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	want := map[string]any{"id": float64(9), "walletid": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationtype": "DEPOSIT", "amount": float64(800230)}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
+func TestCreateWalletTimeout(t *testing.T) {
+	// данные для запроса
+	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "DEPOSIT", "amount": 800230}
+	reqData, _ := json.Marshal(data)
+	// создание запроса
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	// добавляем заголовок
+	req.Header.Set("Content-Type", "application/json")
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполнение запроса
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
 	assert.NoError(t, err)
 	assert.Equal(t, want, response)
 }
@@ -376,6 +475,31 @@ func TestUpdateWalletRight(t *testing.T) {
 	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	want := map[string]any{"id": float64(3), "walletid": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationtype": "WITHDRAW", "amount": float64(250350)}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
+func TestUpdateWalletTimeout(t *testing.T) {
+	// данные для запроса
+	data := map[string]any{"walletId": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationType": "WITHDRAW", "amount": 250350}
+	reqData, _ := json.Marshal(data)
+	// создание запроса
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	// добавляем заголовок
+	req.Header.Set("Content-Type", "application/json")
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполнение запроса
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
 	assert.NoError(t, err)
 	assert.Equal(t, want, response)
 }
@@ -570,6 +694,26 @@ func TestDeleteWalletRight(t *testing.T) {
 	err := json.Unmarshal(wGet.Body.Bytes(), &responseGet)
 	assert.NoError(t, err)
 	assert.Equal(t, 8, len(responseGet))
+}
+
+func TestDeleteWalletTimeout(t *testing.T) {
+	// создание запроса удаления
+	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallet/6", nil)
+	// эмуляция таймаута
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
+	defer cancel()
+	time.Sleep(2 * time.Microsecond)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	// выполнение запроса удаления
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusGatewayTimeout, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"code": float64(504), "message": "database timeout"}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
 }
 
 func TestDeleteWalletWrong1(t *testing.T) {

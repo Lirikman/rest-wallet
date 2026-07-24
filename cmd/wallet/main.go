@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	wallet "github.com/Lirikman/rest-wallet/api"
 	generated "github.com/Lirikman/rest-wallet/db/generated"
@@ -35,6 +36,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("connection error: %v", err)
 	}
+
+	// определение общего числа соединений
+	db.SetMaxOpenConns(80)
+	// определение числа свободных соединений в памяти
+	db.SetMaxIdleConns(40)
+	// обновление соединения каждый час
+	db.SetConnMaxLifetime(time.Hour)
+
 	// освобождаем ресурсы
 	defer func() {
 		if closeErr := db.Close(); closeErr != nil && err == nil {

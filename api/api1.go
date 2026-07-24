@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	generated "github.com/Lirikman/rest-wallet/db/generated"
 	"github.com/gin-gonic/gin"
@@ -67,9 +68,21 @@ func CreateWallet(db *generated.Queries) gin.HandlerFunc {
 			Amount:        req.Amount,
 		}
 
+		// создаём контекст с таймаутом 2 сек.
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancel()
+
 		// создаём новую запись в БД
-		wall, err := db.CreateWallet(context.Background(), params)
+		wall, err := db.CreateWallet(ctx, params)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - create new wallet %s: %v\n", req.WalletID, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
+			// иначе это другая ошибка сервера
 			log.Printf("error create new wallet: %v\n", err)
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
@@ -88,7 +101,7 @@ func ListWallets(db *generated.Queries) gin.HandlerFunc {
 		limit := 50
 		offset := 0
 		// задаём регулярное выражение для поиска всех чисел
-		re := regexp.MustCompile(`\d+`)
+		re := regexp.MustCompile(`-?\d+`)
 		// получаем лимит записей на странице и сдвиг для вывода записей
 		numRange := re.FindAllString(rangeLinks, -1)
 		// проверяем корректность ввода данных
@@ -120,9 +133,21 @@ func ListWallets(db *generated.Queries) gin.HandlerFunc {
 		}
 		paginParams.Limit = int32(limit)
 		paginParams.Offset = int32(offset)
+
+		// создаём контекст с таймаутом 2 сек.
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancel()
+
 		// получаем все записи из БД с учётом пагинации
-		wallets, err := db.ListWallets(c, paginParams)
+		wallets, err := db.ListWallets(ctx, paginParams)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - getting list records: %v\n", err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
 			// проверяем, вызвана ли ошибка отсутствием записей в БД
 			if errors.Is(err, sql.ErrNoRows) {
 				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no wallets found"})
@@ -148,9 +173,21 @@ func GetWalletFromId(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "incorrect ID value entered"})
 			return
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancel()
+
 		// получаем запись по id
-		wall, err := db.GetWalletFromId(c, id)
+		wall, err := db.GetWalletFromId(ctx, id)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - getting wallet by id %d: %v\n", id, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
 			// проверяем, вызвана ли ошибка отсутствием строки в БД
 			if errors.Is(err, sql.ErrNoRows) {
 				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no records with this ID were found"})
@@ -178,9 +215,21 @@ func GetBalanceFromWalletId(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "wallet id is incorrect (example wallet_id: 123e4567-e89b-12d3-a456-426655440000)"})
 			return
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancel()
+
 		// получааем запись по wallet_id
-		bal, err := db.GetBalanceFromWalletUUID(c, walletUUID)
+		bal, err := db.GetBalanceFromWalletUUID(ctx, walletUUID)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - getting balance by wallet_id %s: %v\n", walletUUID, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
 			// проверяем, вызвана ли ошибка отсутствием строки в БД
 			if errors.Is(err, sql.ErrNoRows) {
 				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "wallet with this wallet_id not found"})
@@ -207,9 +256,21 @@ func UpdateWallet(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "incorrect ID value entered"})
 			return
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctxGet, cancelGet := context.WithTimeout(c.Request.Context(), 2*time.Second)
+
 		// проверяем наличие записи в БД
-		_, err = db.GetWalletFromId(c, id)
+		_, err = db.GetWalletFromId(ctxGet, id)
+		// освобождаем ресурсы контекста
+		cancelGet()
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - getting wallet by id %d: %v\n", id, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
 			// проверяем, вызвана ли ошибка отсутствием строки в БД
 			if errors.Is(err, sql.ErrNoRows) {
 				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no records with this ID were found"})
@@ -243,9 +304,22 @@ func UpdateWallet(db *generated.Queries) gin.HandlerFunc {
 			Operationtype: req.Operationtype,
 			Amount:        req.Amount,
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctxUpd, cancelUpd := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancelUpd()
+
 		// обновляем запись
-		res, err := db.UpdateWallet(c, params)
+		res, err := db.UpdateWallet(ctxUpd, params)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - update wallet by id %d: %v\n", id, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
+			// иначе это другая ошибка сервера
 			log.Printf("wallet update error: %v\n", err)
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
@@ -264,9 +338,21 @@ func DeleteWallet(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "incorrect ID value entered"})
 			return
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctxGet, cancelGet := context.WithTimeout(c.Request.Context(), 2*time.Second)
+
 		// проверяем наличие записи в БД
-		_, err = db.GetWalletFromId(c, id)
+		_, err = db.GetWalletFromId(ctxGet, id)
+		// освобождаем ресурсы контекста
+		cancelGet()
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - get wallet by id %d: %v\n", id, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
 			// проверяем, вызвана ли ошибка отсутствием строки в БД
 			if errors.Is(err, sql.ErrNoRows) {
 				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no records with this ID were found"})
@@ -277,9 +363,22 @@ func DeleteWallet(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
 		}
+
+		// создаём контекст с таймаутом 2 сек.
+		ctxDel, cancelDel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		// освобождаем ресурсы контекста
+		defer cancelDel()
+
 		// удаляем запись
-		err = db.DeleteWallet(c, id)
+		err = db.DeleteWallet(ctxDel, id)
 		if err != nil {
+			// проверяем, произошла ли ошибка из-за превышения таймаута
+			if errors.Is(err, context.DeadlineExceeded) {
+				log.Printf("database timeout - delete wallet by id %d: %v\n", id, err)
+				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+				return
+			}
+			// иначе это другая ошибка сервера
 			log.Printf("error deleting wallet subscription: %v\n", err)
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
