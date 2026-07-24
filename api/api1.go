@@ -12,20 +12,20 @@ import (
 
 	generated "github.com/Lirikman/rest-wallet/db/generated"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // DTO для запроса создания записи
 type CreateWalletReqDTO struct {
-	WalletID      string `json:"wallet_id" binding:"required"`
-	OperationType string `json:"operation_type" binding:"required"`
+	WalletID      string `json:"walletId" binding:"required"`
+	OperationType string `json:"operationType" binding:"required"`
 	Amount        int32  `json:"amount" binding:"required"`
 }
 
 // DTO для обновления записи
 type UpdateWalletReqDTO struct {
-	WalletID      string `json:"wallet_id" binding:"required"`
-	Operationtype string `json:"operation_type" binding:"required"`
+	WalletID      string `json:"walletId" binding:"required"`
+	Operationtype string `json:"operationType" binding:"required"`
 	Amount        int32  `json:"amount" binding:"required"`
 }
 
@@ -46,6 +46,14 @@ func CreateWallet(db *generated.Queries) gin.HandlerFunc {
 			return
 		}
 
+		// проверяем wallet_id на корректность
+		var walletUUID pgtype.UUID
+		err := walletUUID.Scan(req.WalletID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "wallet id is incorrect (example wallet_id: 123e4567-e89b-12d3-a456-426655440000)"})
+			return
+		}
+
 		// проверяем корректность ввода баланса
 		if req.Amount < 0 {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "amount can range from zero and above"})
@@ -54,7 +62,7 @@ func CreateWallet(db *generated.Queries) gin.HandlerFunc {
 
 		// формируем параметры для запроса
 		params := generated.CreateWalletParams{
-			Walletid:      req.WalletID,
+			Walletid:      walletUUID,
 			Operationtype: req.OperationType,
 			Amount:        req.Amount,
 		}
@@ -158,7 +166,7 @@ func GetWalletFromId(db *generated.Queries) gin.HandlerFunc {
 }
 
 // обработчик получения записи по walletId
-func GetWalletFromWalletId(db *generated.Queries) gin.HandlerFunc {
+func GetBalanceFromWalletId(db *generated.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var walletUUID pgtype.UUID
 		// чтение параметра user_id из запроса
@@ -171,7 +179,7 @@ func GetWalletFromWalletId(db *generated.Queries) gin.HandlerFunc {
 			return
 		}
 		// получааем запись по wallet_id
-		wall, err := db.GetBalanceFromWalletUUID(c, walletUUID)
+		bal, err := db.GetBalanceFromWalletUUID(c, walletUUID)
 		if err != nil {
 			// проверяем, вызвана ли ошибка отсутствием строки в БД
 			if errors.Is(err, sql.ErrNoRows) {
@@ -183,7 +191,7 @@ func GetWalletFromWalletId(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
 		}
-		c.JSON(http.StatusOK, wall)
+		c.JSON(http.StatusOK, bal)
 	}
 }
 

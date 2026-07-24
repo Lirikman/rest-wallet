@@ -9,36 +9,11 @@ import (
 
 	wallet "github.com/Lirikman/rest-wallet/api"
 	generated "github.com/Lirikman/rest-wallet/db/generated"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	router "github.com/Lirikman/rest-wallet/router"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
 )
-
-// создание маршрутизатора Gin
-func setupRouter() *gin.Engine {
-	router := gin.Default()
-	router.ForwardedByClientIP = true
-	// настраиваем доверенные прокси
-	proxies := []string{"127.0.0.1", "::1"}
-	err := router.SetTrustedProxies(proxies)
-	if err != nil {
-		log.Fatalf("error while setting up proxy")
-	}
-	// настройка политики разрешений
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"https://localhost:8080/"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
-	config.AllowCredentials = true
-	config.AllowHeaders = []string{"Origin", "Content-Type"}
-	router.Use(cors.New(config))
-	// подключаем инструмент восстановления сбоев
-	router.Use(gin.Recovery())
-	// подключаем логгер
-	router.Use(gin.Logger())
-	return router
-}
 
 func main() {
 	// загружаем переменные окружения
@@ -84,15 +59,15 @@ func main() {
 	queries := generated.New(conn)
 
 	// создаём маршрутизатор
-	r := setupRouter()
+	r := router.SetupRouter()
 
 	// регистрируем маршруты
-	r.GET("/api/v1/wallets", wallet.ListWallets(queries))
-	r.GET("/api/v1/wallets/:id", wallet.GetWalletFromWalletId(queries))
-	r.GET("/api/v1/wallets/:wallet_uuid", wallet.GetWalletFromWalletId(queries))
-	r.POST("/api/v1/wallets", wallet.CreateWallet(queries))
-	r.PUT("/api/v1/wallets/:id", wallet.UpdateWallet(queries))
-	r.DELETE("/api/v1/wallets/:id", wallet.DeleteWallet(queries))
+	r.GET("/api/v1/wallet", wallet.ListWallets(queries))
+	r.GET("/api/v1/wallet/by-id/:id", wallet.GetWalletFromId(queries))
+	r.GET("/api/v1/wallet/:wallet_id", wallet.GetBalanceFromWalletId(queries))
+	r.POST("/api/v1/wallet", wallet.CreateWallet(queries))
+	r.PUT("/api/v1/wallet/:id", wallet.UpdateWallet(queries))
+	r.DELETE("/api/v1/wallet/:id", wallet.DeleteWallet(queries))
 
 	// запускаем сервер на порту 8080
 	port := os.Getenv("PORT")
