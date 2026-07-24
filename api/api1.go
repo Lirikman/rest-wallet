@@ -148,14 +148,14 @@ func ListWallets(db *generated.Queries) gin.HandlerFunc {
 				c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
 				return
 			}
-			// проверяем, вызвана ли ошибка отсутствием записей в БД
-			if errors.Is(err, sql.ErrNoRows) {
-				c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no wallets found"})
-				return
-			}
 			// иначе это другая ошибка сервера
 			log.Printf("error getting list of wallets: %v\n", err)
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
+			return
+		}
+		// проверяем, вызвана ли ошибка отсутствием записей в БД
+		if len(wallets) == 0 {
+			c.JSON(http.StatusNotFound, HTTPError{Code: http.StatusNotFound, Message: "no wallets found"})
 			return
 		}
 		c.JSON(http.StatusOK, wallets)
