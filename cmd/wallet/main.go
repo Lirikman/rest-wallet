@@ -71,12 +71,12 @@ func main() {
 	r := router.SetupRouter()
 
 	// регистрируем маршруты
-	r.GET("/api/v1/wallet", wallet.ListWallets(queries))
-	r.GET("/api/v1/wallet/by-id/:id", wallet.GetWalletFromId(queries))
-	r.GET("/api/v1/wallet/:wallet_id", wallet.GetBalanceFromWalletId(queries))
-	r.POST("/api/v1/wallet", wallet.CreateWallet(queries))
-	r.PUT("/api/v1/wallet/:id", wallet.UpdateWallet(queries))
-	r.DELETE("/api/v1/wallet/:id", wallet.DeleteWallet(queries))
+	r.GET("/api/v1/wallets", wallet.ListWallets(queries))
+	r.GET("/api/v1/wallets/by-id/:id", wallet.GetWalletFromId(queries))
+	r.GET("/api/v1/wallets/:wallet_uuid", wallet.GetBalanceFromWalletId(queries))
+	r.POST("/api/v1/wallets", wallet.CreateWallet(queries))
+	r.PUT("/api/v1/wallets/:id", wallet.UpdateWallet(queries))
+	r.DELETE("/api/v1/wallets/:id", wallet.DeleteWallet(queries))
 
 	// запускаем сервер на порту 8080
 	port := os.Getenv("PORT")

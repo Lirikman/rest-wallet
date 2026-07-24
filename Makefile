@@ -1,5 +1,5 @@
 run: # сборка контейнера и запуск api
-	docker compose up --build -d
+	docker compose --env-file config.env up --build -d
 
 stop: # оастновка и удаление контейнера
 	docker compose down

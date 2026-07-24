@@ -207,7 +207,7 @@ func GetBalanceFromWalletId(db *generated.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var walletUUID pgtype.UUID
 		// чтение параметра user_id из запроса
-		walletIdStr := c.Param("wallet_id")
+		walletIdStr := c.Param("wallet_uuid")
 
 		//проверяем wallet_id на корректность
 		err := walletUUID.Scan(walletIdStr)

@@ -76,18 +76,18 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	router = setup.SetupRouter()
 	// регистрация маршрутов
-	router.GET("/api/v1/wallet", ListWallets(queries))
-	router.GET("/api/v1/wallet/by-id/:id", GetWalletFromId(queries))
-	router.GET("/api/v1/wallet/:wallet_id", GetBalanceFromWalletId(queries))
-	router.POST("/api/v1/wallet", CreateWallet(queries))
-	router.PUT("/api/v1/wallet/:id", UpdateWallet(queries))
-	router.DELETE("/api/v1/wallet/:id", DeleteWallet(queries))
+	router.GET("/api/v1/wallets", ListWallets(queries))
+	router.GET("/api/v1/wallets/by-id/:id", GetWalletFromId(queries))
+	router.GET("/api/v1/wallets/:wallet_uuid", GetBalanceFromWalletId(queries))
+	router.POST("/api/v1/wallets", CreateWallet(queries))
+	router.PUT("/api/v1/wallets/:id", UpdateWallet(queries))
+	router.DELETE("/api/v1/wallets/:id", DeleteWallet(queries))
 	os.Exit(m.Run())
 }
 
 func TestGetWalletsRight(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -100,7 +100,7 @@ func TestGetWalletsRight(t *testing.T) {
 
 func TestGetWalletsTimeout(t *testing.T) {
 	// создание запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[2, 5]", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[2, 5]", nil)
 	// эмуляция таймаута
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
 	defer cancel()
@@ -120,7 +120,7 @@ func TestGetWalletsTimeout(t *testing.T) {
 
 func TestPaginationGetWalletsRight1(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[0,2]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[0,2]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -134,7 +134,7 @@ func TestPaginationGetWalletsRight1(t *testing.T) {
 
 func TestPaginationGetWalletsRight2(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[6,20]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[6,20]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -148,7 +148,7 @@ func TestPaginationGetWalletsRight2(t *testing.T) {
 
 func TestPaginationGetWalletsRigh3(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[6,6]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[6,6]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -162,7 +162,7 @@ func TestPaginationGetWalletsRigh3(t *testing.T) {
 
 func TestPaginationGetWalletWrong1(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[15, 2]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[15, 2]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -176,7 +176,7 @@ func TestPaginationGetWalletWrong1(t *testing.T) {
 
 func TestPaginationGetWalletWrong2(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[a, 2]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[a, 2]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -190,7 +190,7 @@ func TestPaginationGetWalletWrong2(t *testing.T) {
 
 func TestPaginationGetWalletWrong3(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[a, 2, 6, 7]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[a, 2, 6, 7]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -204,7 +204,7 @@ func TestPaginationGetWalletWrong3(t *testing.T) {
 
 func TestPaginationGetWalletWrong4(t *testing.T) {
 	// выполнение запроса
-	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet?range=[4, -2]", nil)
+	r, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets?range=[4, -2]", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, r)
 	// проверка результатов
@@ -218,7 +218,7 @@ func TestPaginationGetWalletWrong4(t *testing.T) {
 
 func TestGetWalletFromIDRight(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/2", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/by-id/2", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -232,7 +232,7 @@ func TestGetWalletFromIDRight(t *testing.T) {
 
 func TestGetWalletsFromIDTimeout(t *testing.T) {
 	// создание запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/2", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/by-id/2", nil)
 	// эмуляция таймаута
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
 	defer cancel()
@@ -252,7 +252,7 @@ func TestGetWalletsFromIDTimeout(t *testing.T) {
 
 func TestGetWalletFromIDWrong1(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/1344", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/by-id/1344", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -266,7 +266,7 @@ func TestGetWalletFromIDWrong1(t *testing.T) {
 
 func TestGetWalletFromIDWrong2(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/by-id/noname", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/by-id/noname", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -280,7 +280,7 @@ func TestGetWalletFromIDWrong2(t *testing.T) {
 
 func TestGetBalanceFromWalletIDRight(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/2fb7daea-1685-4575-bce1-74103bbf8a6a", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/2fb7daea-1685-4575-bce1-74103bbf8a6a", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -294,7 +294,7 @@ func TestGetBalanceFromWalletIDRight(t *testing.T) {
 
 func TestGetBalanceFromWalletIDTimeout(t *testing.T) {
 	// создание запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/2fb7daea-1685-4575-bce1-74103bbf8a6a", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/2fb7daea-1685-4575-bce1-74103bbf8a6a", nil)
 	// эмуляция таймаута
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
 	defer cancel()
@@ -314,7 +314,7 @@ func TestGetBalanceFromWalletIDTimeout(t *testing.T) {
 
 func TestGetBalanceFromWalletIDWrong1(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/234-25", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/234-25", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -328,7 +328,7 @@ func TestGetBalanceFromWalletIDWrong1(t *testing.T) {
 
 func TestGetBalanceFromWalletIDWrong2(t *testing.T) {
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet/720c6c03-a3f6-4c4d-9433-b3605a6c1b03", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets/720c6c03-a3f6-4c4d-9433-b3605a6c1b03", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	// проверка результатов
@@ -345,7 +345,7 @@ func TestCreateWalletRight(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "DEPOSIT", "amount": 800230}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -364,7 +364,7 @@ func TestCreateWalletTimeout(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "DEPOSIT", "amount": 800230}
 	reqData, _ := json.Marshal(data)
 	// создание запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	// эмуляция таймаута
@@ -389,7 +389,7 @@ func TestCreateWalletWrong1(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd2s", "operationType": "WITHDRAW", "amount": 100500}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -408,7 +408,7 @@ func TestCreateWalletWrong2(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "BUY", "amount": 100500}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -427,7 +427,7 @@ func TestCreateWalletWrong3(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "WITHDRAW", "amount": -100300}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -446,7 +446,7 @@ func TestCreateWalletWrong4(t *testing.T) {
 	data := map[string]any{"walletId": "dfbd21b7-b27f-41ee-b41b-12078ac1035e", "operationType": "WITHDRAW", "amount": "hello"}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallet", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/wallets", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -465,7 +465,7 @@ func TestUpdateWalletRight(t *testing.T) {
 	data := map[string]any{"walletId": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationType": "WITHDRAW", "amount": 250350}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -484,7 +484,7 @@ func TestUpdateWalletTimeout(t *testing.T) {
 	data := map[string]any{"walletId": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationType": "WITHDRAW", "amount": 250350}
 	reqData, _ := json.Marshal(data)
 	// создание запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	// эмуляция таймаута
@@ -509,7 +509,7 @@ func TestUpdateWalletWrong1(t *testing.T) {
 	data := map[string]any{"walletId": "6046ba8a-ea0f-43ef-b758-a97af67bf7d4", "operationType": "DEPOSIT", "amount": 500670}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/50", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/50", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -528,7 +528,7 @@ func TestUpdateWalletWrong2(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "DEPOSIT", "amount": 500670}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/lala", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/lala", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -547,7 +547,7 @@ func TestUpdateWalletWrong3(t *testing.T) {
 	data := map[string]any{"walletId": "hello_moscow", "operationType": "DEPOSIT", "amount": 500670}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -566,7 +566,7 @@ func TestUpdateWalletWrong4(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "SELF", "amount": 500670}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -585,7 +585,7 @@ func TestUpdateWalletWrong5(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "DEPOSIT", "amount": -500670}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -604,7 +604,7 @@ func TestUpdateWalletWrong6(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "DEPOSIT", "amount": "love"}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -623,7 +623,7 @@ func TestUpdateWalletWrong7(t *testing.T) {
 	data := map[string]any{"operationType": "DEPOSIT", "amount": 30450}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -642,7 +642,7 @@ func TestUpdateWalletWrong8(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "amount": 200350}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -661,7 +661,7 @@ func TestUpdateWalletWrong9(t *testing.T) {
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "DEPOSIT"}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallet/3", bytes.NewBuffer(reqData))
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
 	// добавляем заголовок
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -677,7 +677,7 @@ func TestUpdateWalletWrong9(t *testing.T) {
 
 func TestDeleteWalletRight(t *testing.T) {
 	// выполнение запроса удаления
-	reqDel, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallet/6", nil)
+	reqDel, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallets/6", nil)
 	wDel := httptest.NewRecorder()
 	router.ServeHTTP(wDel, reqDel)
 	// проверка результатов
@@ -685,7 +685,7 @@ func TestDeleteWalletRight(t *testing.T) {
 	want := "entry with ID 6 has been successfully deleted"
 	assert.Equal(t, want, wDel.Body.String())
 	// выполнение запроса получения оставшихся записей
-	reqGet, _ := http.NewRequest(http.MethodGet, "/api/v1/wallet", nil)
+	reqGet, _ := http.NewRequest(http.MethodGet, "/api/v1/wallets", nil)
 	wGet := httptest.NewRecorder()
 	router.ServeHTTP(wGet, reqGet)
 	// проверка результатов
@@ -698,7 +698,7 @@ func TestDeleteWalletRight(t *testing.T) {
 
 func TestDeleteWalletTimeout(t *testing.T) {
 	// создание запроса удаления
-	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallet/6", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallets/6", nil)
 	// эмуляция таймаута
 	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Microsecond)
 	defer cancel()
@@ -718,7 +718,7 @@ func TestDeleteWalletTimeout(t *testing.T) {
 
 func TestDeleteWalletWrong1(t *testing.T) {
 	// данные для запроса (несуществющий id записи)
-	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallet/38", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallets/38", nil)
 	// добавляем заголовок
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -733,7 +733,7 @@ func TestDeleteWalletWrong1(t *testing.T) {
 
 func TestDeleteWalletWrong2(t *testing.T) {
 	// данные для запроса (некорректный id записи)
-	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallet/c++", nil)
+	req, _ := http.NewRequest(http.MethodDelete, "/api/v1/wallets/c++", nil)
 	// добавляем заголовок
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
