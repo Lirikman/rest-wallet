@@ -285,10 +285,8 @@ func TestGetBalanceFromWalletIDRight(t *testing.T) {
 	router.ServeHTTP(w, req)
 	// проверка результатов
 	assert.Equal(t, http.StatusOK, w.Code)
-	var response int
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	want := 900340
-	assert.NoError(t, err)
+	response := w.Body.String()
+	want := "balance of the wallet with the WaletId 2fb7daea-1685-4575-bce1-74103bbf8a6a is 900340 rub."
 	assert.Equal(t, want, response)
 }
 

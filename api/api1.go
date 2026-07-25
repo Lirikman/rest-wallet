@@ -240,7 +240,8 @@ func GetBalanceFromWalletId(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
 			return
 		}
-		c.JSON(http.StatusOK, bal)
+		message := fmt.Sprintf("balance of the wallet with the WaletId %v is %v rub.", walletUUID, bal)
+		c.String(http.StatusOK, message)
 	}
 }
 
