@@ -458,7 +458,7 @@ func TestCreateWalletWrong4(t *testing.T) {
 	assert.Equal(t, want, response)
 }
 
-func TestUpdateWalletRight(t *testing.T) {
+func TestUpdateWalletBalanceRight(t *testing.T) {
 	// данные для запроса
 	data := map[string]any{"walletId": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationType": "WITHDRAW", "amount": 250350}
 	reqData, _ := json.Marshal(data)
@@ -473,6 +473,25 @@ func TestUpdateWalletRight(t *testing.T) {
 	var response map[string]any
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	want := map[string]any{"id": float64(3), "walletid": "10249ade-4344-4599-8ec1-68a90c843dbe", "operationtype": "WITHDRAW", "amount": float64(250350)}
+	assert.NoError(t, err)
+	assert.Equal(t, want, response)
+}
+
+func TestUpdateWalletNoBalanceRight(t *testing.T) {
+	// данные для запроса
+	data := map[string]any{"walletId": "61155bfb-a3be-4db9-9c63-18561162f078", "operationType": "DEPOSIT"}
+	reqData, _ := json.Marshal(data)
+	// выполнение запроса
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/2", bytes.NewBuffer(reqData))
+	// добавляем заголовок
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	// проверка результатов
+	assert.Equal(t, http.StatusOK, w.Code)
+	var response map[string]any
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	want := map[string]any{"id": float64(2), "walletid": "61155bfb-a3be-4db9-9c63-18561162f078", "operationtype": "DEPOSIT", "amount": float64(50000)}
 	assert.NoError(t, err)
 	assert.Equal(t, want, response)
 }
@@ -638,25 +657,6 @@ func TestUpdateWalletWrong7(t *testing.T) {
 func TestUpdateWalletWrong8(t *testing.T) {
 	// данные для запроса (отсутствующий operationType)
 	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "amount": 200350}
-	reqData, _ := json.Marshal(data)
-	// выполнение запроса
-	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
-	// добавляем заголовок
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	// проверка результатов
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	var response map[string]any
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	want := map[string]any{"code": float64(400), "message": "invalid request"}
-	assert.NoError(t, err)
-	assert.Equal(t, want, response)
-}
-
-func TestUpdateWalletWrong9(t *testing.T) {
-	// данные для запроса (отсутствующий amount)
-	data := map[string]any{"walletId": "c06a41c2-8063-4540-9558-6edf6ba9eafb", "operationType": "DEPOSIT"}
 	reqData, _ := json.Marshal(data)
 	// выполнение запроса
 	req, _ := http.NewRequest(http.MethodPut, "/api/v1/wallets/3", bytes.NewBuffer(reqData))
