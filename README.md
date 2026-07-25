@@ -169,6 +169,7 @@ or
   "walletId":"61eca831-525e-4b9e-b859-92d66e30750a",
   "operationType":"DEPOSIT"
 }
+```
 
 **Example answer:**
 ```json
