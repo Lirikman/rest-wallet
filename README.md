@@ -191,6 +191,7 @@ or
   "operationtype":"DEPOSIT"
   "amount":0
 }
+```
 Response code: 201 Created
 
 ### Getting a wallet record by ID
