@@ -12,5 +12,5 @@ type Wallet struct {
 	ID            int64       `json:"id"`
 	Walletid      pgtype.UUID `json:"walletid"`
 	Operationtype string      `json:"operationtype"`
-	Amount        int32       `json:"amount"`
+	Amount        *int32      `json:"amount"`
 }

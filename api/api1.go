@@ -20,14 +20,14 @@ import (
 type CreateWalletReqDTO struct {
 	WalletID      string `json:"walletId" binding:"required"`
 	OperationType string `json:"operationType" binding:"required"`
-	Amount        int32  `json:"amount" binding:"required"`
+	Amount        int32  `json:"amount"`
 }
 
 // DTO для обновления записи
 type UpdateWalletReqDTO struct {
 	WalletID      string `json:"walletId" binding:"required"`
 	Operationtype string `json:"operationType" binding:"required"`
-	Amount        int32  `json:"amount" binding:"required"`
+	Amount        *int32 `json:"amount"`
 }
 
 // структура ошибки при запросах
@@ -65,7 +65,7 @@ func CreateWallet(db *generated.Queries) gin.HandlerFunc {
 		params := generated.CreateWalletParams{
 			Walletid:      walletUUID,
 			Operationtype: req.OperationType,
-			Amount:        req.Amount,
+			Amount:        &req.Amount,
 		}
 
 		// создаём контекст с таймаутом 2 сек.
@@ -293,13 +293,42 @@ func UpdateWallet(db *generated.Queries) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "wallet id is incorrect (example wallet_id: 123e4567-e89b-12d3-a456-426655440000)"})
 			return
 		}
+		// проверяем поле amount на null
+		if req.Amount == nil {
+			// формируем параметры для запроса
+			params := generated.UpdateWalletNoBalanceParams{
+				ID:            id,
+				Walletid:      walletUUID,
+				Operationtype: req.Operationtype,
+			}
+			// создаём контекст с таймаутом 2 сек.
+			ctxUpd, cancelUpd := context.WithTimeout(c.Request.Context(), 2*time.Second)
+			// освобождаем ресурсы контекста
+			defer cancelUpd()
+			// обновляем запись, не трогая amount
+			res, err := db.UpdateWalletNoBalance(ctxUpd, params)
+			if err != nil {
+				// проверяем, произошла ли ошибка из-за превышения таймаута
+				if errors.Is(err, context.DeadlineExceeded) {
+					log.Printf("database timeout - update wallet by id %d: %v\n", id, err)
+					c.JSON(http.StatusGatewayTimeout, HTTPError{Code: http.StatusGatewayTimeout, Message: "database timeout"})
+					return
+				}
+				// иначе это другая ошибка сервера
+				log.Printf("wallet update error: %v\n", err)
+				c.JSON(http.StatusInternalServerError, HTTPError{Code: http.StatusInternalServerError, Message: "internal server error"})
+				return
+			}
+			c.JSON(http.StatusOK, res)
+		}
+
 		// проверяем корректность ввода баланса
-		if req.Amount < 0 {
+		if *req.Amount < 0 {
 			c.JSON(http.StatusBadRequest, HTTPError{Code: http.StatusBadRequest, Message: "invoice amount may be zero or greater"})
 			return
 		}
 		// формируем параметры для запроса
-		params := generated.UpdateWalletParams{
+		params := generated.UpdateWalletBalanceParams{
 			ID:            id,
 			Walletid:      walletUUID,
 			Operationtype: req.Operationtype,
@@ -312,7 +341,7 @@ func UpdateWallet(db *generated.Queries) gin.HandlerFunc {
 		defer cancelUpd()
 
 		// обновляем запись
-		res, err := db.UpdateWallet(ctxUpd, params)
+		res, err := db.UpdateWalletBalance(ctxUpd, params)
 		if err != nil {
 			// проверяем, произошла ли ошибка из-за превышения таймаута
 			if errors.Is(err, context.DeadlineExceeded) {

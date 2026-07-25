@@ -23,7 +23,7 @@ RETURNING id, walletId, operationType, amount
 type CreateWalletParams struct {
 	Walletid      pgtype.UUID `json:"walletid"`
 	Operationtype string      `json:"operationtype"`
-	Amount        int32       `json:"amount"`
+	Amount        *int32      `json:"amount"`
 }
 
 func (q *Queries) CreateWallet(ctx context.Context, arg CreateWalletParams) (Wallet, error) {
@@ -54,9 +54,9 @@ FROM wallet
 WHERE walletId = $1
 `
 
-func (q *Queries) GetBalanceFromWalletUUID(ctx context.Context, walletid pgtype.UUID) (int32, error) {
+func (q *Queries) GetBalanceFromWalletUUID(ctx context.Context, walletid pgtype.UUID) (*int32, error) {
 	row := q.db.QueryRow(ctx, getBalanceFromWalletUUID, walletid)
-	var amount int32
+	var amount *int32
 	err := row.Scan(&amount)
 	return amount, err
 }
@@ -115,27 +115,52 @@ func (q *Queries) ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wal
 	return items, nil
 }
 
-const updateWallet = `-- name: UpdateWallet :one
+const updateWalletBalance = `-- name: UpdateWalletBalance :one
 UPDATE wallet
 SET walletId = $2, operationType = $3, amount = $4
 WHERE id = $1
 RETURNING id, walletId, operationType, amount
 `
 
-type UpdateWalletParams struct {
+type UpdateWalletBalanceParams struct {
 	ID            int64       `json:"id"`
 	Walletid      pgtype.UUID `json:"walletid"`
 	Operationtype string      `json:"operationtype"`
-	Amount        int32       `json:"amount"`
+	Amount        *int32      `json:"amount"`
 }
 
-func (q *Queries) UpdateWallet(ctx context.Context, arg UpdateWalletParams) (Wallet, error) {
-	row := q.db.QueryRow(ctx, updateWallet,
+func (q *Queries) UpdateWalletBalance(ctx context.Context, arg UpdateWalletBalanceParams) (Wallet, error) {
+	row := q.db.QueryRow(ctx, updateWalletBalance,
 		arg.ID,
 		arg.Walletid,
 		arg.Operationtype,
 		arg.Amount,
 	)
+	var i Wallet
+	err := row.Scan(
+		&i.ID,
+		&i.Walletid,
+		&i.Operationtype,
+		&i.Amount,
+	)
+	return i, err
+}
+
+const updateWalletNoBalance = `-- name: UpdateWalletNoBalance :one
+UPDATE wallet
+SET walletId = $2, operationType = $3
+WHERE id = $1
+RETURNING id, walletId, operationType, amount
+`
+
+type UpdateWalletNoBalanceParams struct {
+	ID            int64       `json:"id"`
+	Walletid      pgtype.UUID `json:"walletid"`
+	Operationtype string      `json:"operationtype"`
+}
+
+func (q *Queries) UpdateWalletNoBalance(ctx context.Context, arg UpdateWalletNoBalanceParams) (Wallet, error) {
+	row := q.db.QueryRow(ctx, updateWalletNoBalance, arg.ID, arg.Walletid, arg.Operationtype)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,

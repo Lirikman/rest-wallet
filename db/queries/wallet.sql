@@ -21,7 +21,13 @@ $1, $2, $3
 )
 RETURNING id, walletId, operationType, amount;
 
--- name: UpdateWallet :one
+-- name: UpdateWalletNoBalance :one
+UPDATE wallet
+SET walletId = $2, operationType = $3
+WHERE id = $1
+RETURNING id, walletId, operationType, amount;
+
+-- name: UpdateWalletBalance :one
 UPDATE wallet
 SET walletId = $2, operationType = $3, amount = $4
 WHERE id = $1
