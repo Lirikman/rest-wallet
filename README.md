@@ -46,7 +46,7 @@ make run
 
 3. Check the work
 
-After a successful launch, the application will be available at: 
+  After a successful launch, the application will be available at: 
 👉 http://127.0.0.1:8080/api/v1
 
 5. Stopping and removing the container
