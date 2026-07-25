@@ -320,6 +320,7 @@ func UpdateWallet(db *generated.Queries) gin.HandlerFunc {
 				return
 			}
 			c.JSON(http.StatusOK, res)
+			return
 		}
 
 		// проверяем корректность ввода баланса
